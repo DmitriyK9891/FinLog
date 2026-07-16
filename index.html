@@ -24,11 +24,15 @@
             background-color: #121212;
             color: #e0e0e0;
             -webkit-tap-highlight-color: transparent;
-            
-            /* ДИНАМІЧНІ ВІДСТУПИ ПІД ЧУБЧИК / DYNAMIC ISLAND ТА ДОМАШНЮ СМУГУ IPHONE */
-            padding-top: calc(env(safe-area-inset-top, 20px) + 12px);
-            padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 90px);
+            /* Залишаємо нижній відступ для системної смуги iOS */
+            padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 100px);
         }
+        
+        /* ГАРАНТОВАНЕ ВИПРАВЛЕННЯ НАКЛАДАННЯ НА ВЕРХНІЙ РЯДОК IPHONE */
+        header {
+            padding-top: calc(env(safe-area-inset-top, 20px) + 16px) !important;
+        }
+
         ::-webkit-scrollbar {
             width: 4px;
         }
@@ -38,10 +42,10 @@
         }
     </style>
 </head>
-<body class="font-sans antialiased max-w-md mx-auto p-4">
+<body class="font-sans antialiased max-w-md mx-auto px-4">
 
-    <!-- HEADER (ЗСУНУТИЙ ВНИЗ ЗАВДЯКИ PADDING-TOP У BODY) -->
-    <header class="flex justify-between items-center mb-5 pt-1">
+    <!-- HEADER (З ОНОВЛЕНИМ СТИЛЕМ ДЛЯ IOS SAFE AREA) -->
+    <header class="flex justify-between items-center mb-5 pb-2 border-b border-zinc-900">
         <h1 class="text-2xl font-black text-emerald-500 tracking-wider">FINLOG <span class="text-xs bg-emerald-500 text-black px-1.5 py-0.5 rounded font-bold">PRO</span></h1>
         <div class="flex space-x-4">
             <button onclick="exportBackup()" class="text-zinc-400 hover:text-white" title="Експорт резервної копії"><i class="fa-solid fa-download text-lg"></i></button>
@@ -114,7 +118,7 @@
     </section>
 
     <!-- ФОРМА ВВЕДЕННЯ ТРАНЗАКЦІЇ -->
-    <section class="bg-zinc-900 p-4 rounded-2xl border border-zinc-800/80 mb-4">
+    <section id="transaction-section" class="bg-zinc-900 p-4 rounded-2xl border border-zinc-800/80 mb-4 scroll-mt-20">
         <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3"><i class="fa-solid fa-plus-minus mr-1 text-emerald-500"></i> Нова операція</h3>
         
         <div class="space-y-4">
@@ -209,7 +213,7 @@
     </div>
 
     <!-- ФІКСОВАНА КНОПКА ЗАКРИТТЯ ДНЯ З УРАХУВАННЯМ SAFE AREA ЗНИЗУ -->
-    <div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-zinc-950/90 backdrop-blur-md border-t border-zinc-900/60 pb-[calc(env(safe-area-inset-bottom,16px)+12px)] z-40">
+    <div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-900/60 pb-[calc(env(safe-area-inset-bottom,16px)+12px)] z-40">
         <button onclick="closeFinancialDay()" class="w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-yellow-400 hover:text-yellow-300 active:scale-95 transition font-bold py-3.5 rounded-xl text-xs tracking-wider flex justify-center items-center">
             <i class="fa-solid fa-moon mr-2"></i> ЗАКРИТИ ФІНАНСОВИЙ ДЕНЬ
         </button>
@@ -395,7 +399,7 @@
                 const mainBtn = document.createElement('button');
                 mainBtn.className = `py-2 px-3.5 rounded-xl bg-zinc-800 border border-zinc-700 text-xs text-white font-medium hover:bg-zinc-700 active:scale-95 transition ${presetEditMode ? 'opacity-50 pointer-events-none' : ''}`;
                 mainBtn.innerHTML = `${p.label} <span class="text-zinc-400 ml-1">${p.amount}₴</span>`;
-                mainBtn.onclick = () => applyPreset(p);
+                mainBtn.onclick = () => selectPresetToForm(p); // ОНОВЛЕНА ЛОГІКА: ЗАПОВНЕННЯ ФОРМИ ЗАМІСТЬ МИТТЄВОГО СПИСАННЯ
 
                 if (presetEditMode) {
                     const delBtn = document.createElement('button');
@@ -571,7 +575,7 @@
                 
                 const isIOwe = debt.direction === 'i_owe';
                 const badgeColor = isIOwe ? 'bg-red-500/10 text-red-400' : 'bg-purple-500/10 text-purple-400';
-                const badgeText = isIOwe ? 'Я винен' : 'Мені винні';
+                const badgeText = isIOwe ? 'Я винен' : 'Mentі винні';
 
                 row.innerHTML = `
                     <div>
@@ -634,6 +638,19 @@
                     btn.className = "py-2 rounded-xl text-xs font-semibold bg-zinc-800 text-zinc-400 border border-transparent transition";
                 }
             });
+        }
+
+        // ОНОВЛЕНА ФУНКЦІЯ: ТЕПЕР ПРЕСЕТ ЗАПОВНЮЄ ФОРМУ, А НЕ СПИСУЄ НАОСЛІП
+        function selectPresetToForm(preset) {
+            // Встановлюємо тип "Витрата"
+            setTxType('expense');
+            
+            // Заповнюємо поля суми та коментаря згідно з пресетом
+            document.getElementById('tx-amount').value = preset.amount;
+            document.getElementById('tx-comment').value = preset.label;
+
+            // Плавно скролимо екран до форми операції, щоб користувач міг обрати рахунок
+            document.getElementById('transaction-section').scrollIntoView({ behavior: 'smooth' });
         }
 
         function processTransaction() {
@@ -856,64 +873,6 @@
             });
 
             state.debts.splice(index, 1);
-            saveState();
-        }
-
-        function applyPreset(preset) {
-            const targetAccObj = state.accounts.find(a => a.id === currentTx.sourceAcc);
-            if (!targetAccObj) {
-                alert('Виберіть рахунок перед застосуванням пресету!');
-                return;
-            }
-
-            const dateStr = new Date().toLocaleDateString('uk-UA', { hour: '2-digit', minute: '2-digit' });
-            const amount = preset.amount;
-
-            if (targetAccObj.type === 'card') {
-                const roundedSum = Math.ceil(amount / 10) * 10;
-                const change = Number((roundedSum - amount).toFixed(2));
-
-                if (targetAccObj.balance < (amount + change)) {
-                    alert(`Недостатньо коштів на картці ${targetAccObj.label}!`);
-                    return;
-                }
-
-                targetAccObj.balance -= (amount + change);
-                const piggyObj = state.accounts.find(a => a.type === 'piggy') || state.accounts[2];
-                if (piggyObj) piggyObj.balance += change;
-
-                state.history.push({
-                    type: 'expense',
-                    amount: amount,
-                    account: targetAccObj.id,
-                    comment: preset.label,
-                    date: dateStr
-                });
-
-                if (change > 0) {
-                    state.history.push({
-                        type: 'transfer',
-                        amount: change,
-                        account: targetAccObj.id,
-                        comment: `🐷 Округлення транзакції до 10 грн`,
-                        date: dateStr
-                    });
-                }
-            } else {
-                if (targetAccObj.balance < amount) {
-                    alert(`Недостатньо коштів на рахунку ${targetAccObj.label}!`);
-                    return;
-                }
-                targetAccObj.balance -= amount;
-                state.history.push({
-                    type: 'expense',
-                    amount: amount,
-                    account: targetAccObj.id,
-                    comment: preset.label,
-                    date: dateStr
-                });
-            }
-
             saveState();
         }
 
