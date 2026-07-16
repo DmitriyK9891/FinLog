@@ -2,10 +2,11 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
+    <!-- НАДВАЖЛИВИЙ ПАРАМЕТР viewport-fit=cover ДЛЯ IOS SAFE AREA -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>FinLog Pro</title>
     
-    <!-- ТЕГИ ДЛЯ ПОВАНОЦІННОГО PWA НА IOS -->
+    <!-- ТЕГИ ДЛЯ ПОВНОЦІННОГО PWA НА IOS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="FinLog Pro">
@@ -23,8 +24,10 @@
             background-color: #121212;
             color: #e0e0e0;
             -webkit-tap-highlight-color: transparent;
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: calc(env(safe-area-inset-bottom) + 85px);
+            
+            /* ДИНАМІЧНІ ВІДСТУПИ ПІД ЧУБЧИК / DYNAMIC ISLAND ТА ДОМАШНЮ СМУГУ IPHONE */
+            padding-top: calc(env(safe-area-inset-top, 20px) + 12px);
+            padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 90px);
         }
         ::-webkit-scrollbar {
             width: 4px;
@@ -37,8 +40,8 @@
 </head>
 <body class="font-sans antialiased max-w-md mx-auto p-4">
 
-    <!-- HEADER -->
-    <header class="flex justify-between items-center mb-5 pt-2">
+    <!-- HEADER (ЗСУНУТИЙ ВНИЗ ЗАВДЯКИ PADDING-TOP У BODY) -->
+    <header class="flex justify-between items-center mb-5 pt-1">
         <h1 class="text-2xl font-black text-emerald-500 tracking-wider">FINLOG <span class="text-xs bg-emerald-500 text-black px-1.5 py-0.5 rounded font-bold">PRO</span></h1>
         <div class="flex space-x-4">
             <button onclick="exportBackup()" class="text-zinc-400 hover:text-white" title="Експорт резервної копії"><i class="fa-solid fa-download text-lg"></i></button>
@@ -61,7 +64,7 @@
         </div>
     </section>
 
-    <!-- РАХУНКИ (ДИНАМІЧНІ МІСЦЯ ЗБЕРІГАННЯ) -->
+    <!-- РАХУНКИ -->
     <section class="bg-zinc-900 p-4 rounded-2xl border border-zinc-800/80 mb-4">
         <div class="flex justify-between items-center mb-3">
             <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider"><i class="fa-solid fa-wallet mr-1.5 text-sky-400"></i> Рахунки та Сейфи</h3>
@@ -170,7 +173,7 @@
         <div id="tx-history" class="space-y-3 max-h-60 overflow-y-auto pr-1"></div>
     </section>
 
-    <!-- МОДАЛЬНЕ ВІКНО: СТВОРЕННЯ НОВОГО РАХУНКУ -->
+    <!-- МОДАЛЬНЕ ВІКНО -->
     <div id="account-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
         <div class="bg-zinc-900 border border-zinc-800 w-full max-w-sm rounded-2xl p-5 space-y-4">
             <div class="flex justify-between items-center border-b border-zinc-800 pb-2">
@@ -205,8 +208,8 @@
         </div>
     </div>
 
-    <!-- ФІКСОВАНА КНОПКА ЗАКРИТТЯ ДНЯ -->
-    <div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-zinc-950/90 backdrop-blur-md border-t border-zinc-900 pb-[calc(env(safe-area-inset-bottom)+12px)] z-40">
+    <!-- ФІКСОВАНА КНОПКА ЗАКРИТТЯ ДНЯ З УРАХУВАННЯМ SAFE AREA ЗНИЗУ -->
+    <div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-zinc-950/90 backdrop-blur-md border-t border-zinc-900/60 pb-[calc(env(safe-area-inset-bottom,16px)+12px)] z-40">
         <button onclick="closeFinancialDay()" class="w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-yellow-400 hover:text-yellow-300 active:scale-95 transition font-bold py-3.5 rounded-xl text-xs tracking-wider flex justify-center items-center">
             <i class="fa-solid fa-moon mr-2"></i> ЗАКРИТИ ФІНАНСОВИЙ ДЕНЬ
         </button>
@@ -242,7 +245,7 @@
         let tempSelectedAccIcon = '💳';
         let tempSelectedPresetIcon = '☕';
         let presetEditMode = false;
-        let myChart = null; // Об'єкт графіка
+        let myChart = null;
 
         window.onload = function() {
             if (!state.accounts) {
@@ -272,28 +275,21 @@
             renderDebts();
             renderHistory();
             renderFormAccountSelectors();
-            updateChart(); // Оновлення графіка при кожній зміні балансів
+            updateChart();
         }
 
-        // Оновлення або ініціалізація графіка-бублика
         function updateChart() {
             const ctx = document.getElementById('balanceChart').getContext('2d');
-            
-            // Фільтруємо рахунки, де баланс більше 0, щоб бублик не ламався від порожніх значень
             const activeAccounts = state.accounts.filter(acc => acc.balance > 0);
-            
             const labels = activeAccounts.map(acc => `${acc.icon} ${acc.label}`);
             const data = activeAccounts.map(acc => acc.balance);
             
-            // Якщо грошей взагалі немає ніде, виведемо заглушку
             if (data.length === 0) {
                 labels.push('Порожні рахунки');
-                data.push(1); // Тимчасовий заповнювач для краси
+                data.push(1);
             }
 
-            const chartColors = [
-                '#10b981', '#06b6d4', '#8b5cf6', '#f59e0b', '#ec4899', '#3b82f6', '#f43f5e'
-            ];
+            const chartColors = ['#10b981', '#06b6d4', '#8b5cf6', '#f59e0b', '#ec4899', '#3b82f6', '#f43f5e'];
 
             if (myChart) {
                 myChart.data.labels = labels;
@@ -316,9 +312,7 @@
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: {
-                                display: false // Приховуємо легенду зверху, рахунки і так підписані нижче
-                            },
+                            legend: { display: false },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
@@ -328,13 +322,12 @@
                                 }
                             }
                         },
-                        cutout: '70%' // Робимо бублик тонким і витонченим
+                        cutout: '70%'
                     }
                 });
             }
         }
 
-        // Побудова списку іконок
         function buildEmojiPickers() {
             const accList = document.getElementById('account-emoji-list');
             accList.innerHTML = '';
@@ -369,7 +362,6 @@
             presetList.children[10]?.classList.replace('border-zinc-800', 'border-yellow-500');
         }
 
-        // Рендер рахунків
         function renderAccounts() {
             const list = document.getElementById('accounts-list');
             list.innerHTML = '';
