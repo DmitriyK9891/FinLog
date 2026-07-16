@@ -2,19 +2,15 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <!-- НАДВАЖЛИВИЙ ПАРАМЕТР viewport-fit=cover ДЛЯ IOS SAFE AREA -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>FinLog Pro</title>
     
-    <!-- ТЕГИ ДЛЯ ПОВНОЦІННОГО PWA НА IOS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="FinLog Pro">
     
-    <!-- ІКОНКА ДЛЯ ЯРЛИКА НА РОБОЧОМУ СТОЛІ IPHONE -->
     <link class="rounded-3xl" rel="apple-touch-icon" href="https://img.icons8.com/nolan/512/safe.png">
     
-    <!-- Tailwind CSS, Іконки та Chart.js для графіка-бублика -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -24,11 +20,9 @@
             background-color: #121212;
             color: #e0e0e0;
             -webkit-tap-highlight-color: transparent;
-            /* Залишаємо нижній відступ для системної смуги iOS */
             padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 100px);
         }
         
-        /* ГАРАНТОВАНЕ ВИПРАВЛЕННЯ НАКЛАДАННЯ НА ВЕРХНІЙ РЯДОК IPHONE */
         header {
             padding-top: calc(env(safe-area-inset-top, 20px) + 16px) !important;
         }
@@ -44,13 +38,13 @@
 </head>
 <body class="font-sans antialiased max-w-md mx-auto px-4">
 
-    <!-- HEADER (З ОНОВЛЕНИМ СТИЛЕМ ДЛЯ IOS SAFE AREA) -->
+    <!-- HEADER -->
     <header class="flex justify-between items-center mb-5 pb-2 border-b border-zinc-900">
         <h1 class="text-2xl font-black text-emerald-500 tracking-wider">FINLOG <span class="text-xs bg-emerald-500 text-black px-1.5 py-0.5 rounded font-bold">PRO</span></h1>
         <div class="flex space-x-4">
-            <button onclick="exportBackup()" class="text-zinc-400 hover:text-white" title="Експорт резервної копії"><i class="fa-solid fa-download text-lg"></i></button>
-            <button onclick="importBackup()" class="text-zinc-400 hover:text-white" title="Імпорт резервної копії"><i class="fa-solid fa-upload text-lg"></i></button>
-            <button onclick="clearAllData()" class="text-red-500 hover:text-red-400" title="Скинути всі дані"><i class="fa-solid fa-trash-can text-lg"></i></button>
+            <button onclick="exportBackup()" class="text-zinc-400 hover:text-white" title="Експорт"><i class="fa-solid fa-download text-lg"></i></button>
+            <button onclick="importBackup()" class="text-zinc-400 hover:text-white" title="Імпорт"><i class="fa-solid fa-upload text-lg"></i></button>
+            <button onclick="clearAllData()" class="text-red-500 hover:text-red-400" title="Скинути дані"><i class="fa-solid fa-trash-can text-lg"></i></button>
         </div>
     </header>
 
@@ -60,11 +54,32 @@
         <span id="total-balance" class="text-3xl font-black text-emerald-400">0.00</span> <span class="text-lg font-bold text-emerald-400">₴</span>
     </section>
 
-    <!-- АНАЛІТИКА: ГРАФІК-БУБЛИК -->
+    <!-- РОЗУМНА АНАЛІТИКА ТА СТАТИСТИКА -->
     <section class="bg-zinc-900 p-4 rounded-2xl border border-zinc-800/80 mb-4">
-        <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3"><i class="fa-solid fa-chart-pie mr-1.5 text-emerald-400"></i> Розподіл активів</h3>
-        <div class="relative w-full max-w-[200px] mx-auto h-[200px] flex items-center justify-center">
-            <canvas id="balanceChart"></canvas>
+        <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-4"><i class="fa-solid fa-chart-pie mr-1.5 text-emerald-400"></i> Аналітика витрат та баланс</h3>
+        
+        <!-- Віджети швидкої статистики -->
+        <div class="grid grid-cols-3 gap-2 mb-4 text-center">
+            <div class="bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/50">
+                <span class="text-[9px] text-zinc-500 uppercase font-bold block mb-0.5">Доходи</span>
+                <span id="stats-income" class="text-xs font-black text-emerald-400">0 ₴</span>
+            </div>
+            <div class="bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/50">
+                <span class="text-[9px] text-zinc-500 uppercase font-bold block mb-0.5">Витрати</span>
+                <span id="stats-expense" class="text-xs font-black text-red-400">0 ₴</span>
+            </div>
+            <div class="bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/50">
+                <span class="text-[9px] text-zinc-500 uppercase font-bold block mb-0.5">Борги (нетто)</span>
+                <span id="stats-debts" class="text-xs font-black text-purple-400">0 ₴</span>
+            </div>
+        </div>
+
+        <!-- Графік-бублик розподілу категорій витрат -->
+        <div class="relative w-full max-w-[180px] mx-auto h-[180px] flex items-center justify-center">
+            <canvas id="expenseChart"></canvas>
+        </div>
+        <div id="chart-legend" class="mt-4 flex flex-wrap gap-2 justify-center text-[10px] text-zinc-400">
+            <!-- Легенда категорій згенерується динамічно -->
         </div>
     </section>
 
@@ -76,9 +91,7 @@
                 <i class="fa-solid fa-plus mr-1"></i> Додати
             </button>
         </div>
-        <div id="accounts-list" class="grid grid-cols-2 gap-2.5">
-            <!-- Рахунки рендеряться динамічно -->
-        </div>
+        <div id="accounts-list" class="grid grid-cols-2 gap-2.5"></div>
     </section>
 
     <!-- ШВИДКІ ПРЕСЕТИ -->
@@ -90,7 +103,6 @@
             </button>
         </div>
         
-        <!-- Форма швидкого створення пресету -->
         <div id="preset-creator-block" class="hidden bg-zinc-950/80 p-3 rounded-xl border border-zinc-800 mb-3 space-y-2">
             <div class="text-[11px] text-yellow-500 font-bold uppercase mb-1">Створити новий пресет:</div>
             <div class="grid grid-cols-3 gap-1.5">
@@ -98,10 +110,7 @@
                 <input type="number" id="new-preset-amount" placeholder="Сума" class="bg-zinc-900 border border-zinc-800 rounded-lg py-1 px-2.5 text-xs text-white focus:outline-none">
             </div>
             
-            <!-- Вибір іконки пресету -->
-            <div class="flex flex-wrap gap-1 py-1" id="preset-emoji-list">
-                <!-- Заповниться динамічно -->
-            </div>
+            <div class="flex flex-wrap gap-1 py-1" id="preset-emoji-list"></div>
             
             <button onclick="createNewPreset()" class="w-full bg-yellow-500 text-black font-bold text-[11px] py-1.5 rounded-lg">
                 Додати пресет у меню
@@ -111,32 +120,27 @@
         <div id="presets-list" class="flex flex-wrap gap-2"></div>
     </section>
 
-    <!-- БОРГОВИЙ РАДАР -->
+    <!-- БОРГОВИЙ РАДАР (ТЕПЕР З АВТОНОМНИМ ДОДАВАННЯМ) -->
     <section class="bg-zinc-900 p-4 rounded-2xl border border-zinc-800/80 mb-4">
-        <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3"><i class="fa-solid fa-handshake mr-1 text-purple-400"></i> Борги та зобов'язання</h3>
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider"><i class="fa-solid fa-handshake mr-1 text-purple-400"></i> Борги та зобов'язання</h3>
+            <button onclick="openDebtModal()" class="text-purple-400 hover:text-purple-300 font-bold text-xs flex items-center">
+                <i class="fa-solid fa-plus mr-1"></i> Додати
+            </button>
+        </div>
         <div id="debts-list" class="space-y-2"></div>
     </section>
 
-    <!-- ФОРМА ВВЕДЕННЯ ТРАНЗАКЦІЇ -->
+    <!-- ФОРМА ВВЕДЕННЯ ТРАНЗАКЦІЇ (БЕЗ ТИПУ "БОРГ") -->
     <section id="transaction-section" class="bg-zinc-900 p-4 rounded-2xl border border-zinc-800/80 mb-4 scroll-mt-20">
         <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3"><i class="fa-solid fa-plus-minus mr-1 text-emerald-500"></i> Нова операція</h3>
         
         <div class="space-y-4">
             <!-- Тип транзакції -->
-            <div class="grid grid-cols-4 gap-1.5">
-                <button onclick="setTxType('income')" id="btn-type-income" class="py-2 rounded-xl text-[10px] font-bold transition bg-zinc-800 text-zinc-400">Надходження</button>
-                <button onclick="setTxType('expense')" id="btn-type-expense" class="py-2 rounded-xl text-[10px] font-bold transition bg-zinc-800 text-zinc-400">Витрата</button>
-                <button onclick="setTxType('transfer')" id="btn-type-transfer" class="py-2 rounded-xl text-[10px] font-bold transition bg-zinc-800 text-zinc-400">Переказ</button>
-                <button onclick="setTxType('debt')" id="btn-type-debt" class="py-2 rounded-xl text-[10px] font-bold transition bg-zinc-800 text-zinc-400">Борг</button>
-            </div>
-
-            <!-- Поля форми для боргу -->
-            <div id="debt-fields" class="hidden space-y-3">
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="setDebtDirection('i_owe')" id="btn-debt-i-owe" class="py-2 rounded-xl text-xs font-semibold bg-zinc-800 text-zinc-400 border border-transparent transition">Я винен</button>
-                    <button onclick="setDebtDirection('owe_me')" id="btn-debt-owe-me" class="py-2 rounded-xl text-xs font-semibold bg-zinc-800 text-zinc-400 border border-transparent transition">Мені винні</button>
-                </div>
-                <input type="text" id="debt-person" placeholder="Ім'я особи або Назва боргу" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-4 text-zinc-300 text-sm focus:outline-none focus:border-purple-500 transition">
+            <div class="grid grid-cols-3 gap-1.5">
+                <button onclick="setTxType('income')" id="btn-type-income" class="py-2 rounded-xl text-xs font-bold transition bg-zinc-800 text-zinc-400">Надходження</button>
+                <button onclick="setTxType('expense')" id="btn-type-expense" class="py-2 rounded-xl text-xs font-bold transition bg-zinc-800 text-zinc-400">Витрата</button>
+                <button onclick="setTxType('transfer')" id="btn-type-transfer" class="py-2 rounded-xl text-xs font-bold transition bg-zinc-800 text-zinc-400">Переказ</button>
             </div>
 
             <!-- Сума -->
@@ -147,22 +151,18 @@
             <!-- Вибір джерела -->
             <div>
                 <span id="source-label" class="text-[11px] text-zinc-500 block mb-1.5">Рахунок:</span>
-                <div id="source-acc-block" class="grid grid-cols-2 gap-2 max-h-24 overflow-y-auto pr-1">
-                    <!-- Заповнюється динамічно -->
-                </div>
+                <div id="source-acc-block" class="grid grid-cols-2 gap-2 max-h-24 overflow-y-auto pr-1"></div>
             </div>
 
-            <!-- Рахунок отримувача (Тільки для типу "Переказ") -->
+            <!-- Рахунок отримувача -->
             <div id="target-acc-block" class="hidden">
                 <span class="text-[11px] text-zinc-500 block mb-1.5">Куди переказуємо:</span>
-                <div id="target-acc-select" class="grid grid-cols-2 gap-2 max-h-24 overflow-y-auto pr-1">
-                    <!-- Заповнюється динамічно -->
-                </div>
+                <div id="target-acc-select" class="grid grid-cols-2 gap-2 max-h-24 overflow-y-auto pr-1"></div>
             </div>
 
-            <!-- Коментар -->
+            <!-- Коментар / Категорія -->
             <div id="comment-block">
-                <input type="text" id="tx-comment" placeholder="Опис (напр., Кава, Аванс)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-4 text-zinc-300 text-sm focus:outline-none focus:border-emerald-500 transition">
+                <input type="text" id="tx-comment" placeholder="Категорія або Опис (напр., Кава, Паливо, Аванс)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-4 text-zinc-300 text-sm focus:outline-none focus:border-emerald-500 transition">
             </div>
 
             <button onclick="processTransaction()" class="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-emerald-900/20">
@@ -177,7 +177,7 @@
         <div id="tx-history" class="space-y-3 max-h-60 overflow-y-auto pr-1"></div>
     </section>
 
-    <!-- МОДАЛЬНЕ ВІКНО -->
+    <!-- МОДАЛЬНЕ ВІКНО ДОДАВАННЯ РАХУНКУ -->
     <div id="account-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
         <div class="bg-zinc-900 border border-zinc-800 w-full max-w-sm rounded-2xl p-5 space-y-4">
             <div class="flex justify-between items-center border-b border-zinc-800 pb-2">
@@ -200,9 +200,7 @@
 
                 <div>
                     <label class="text-[11px] text-zinc-500 block mb-1">Оберіть іконку:</label>
-                    <div class="flex flex-wrap gap-1.5 p-2 bg-zinc-950 rounded-xl border border-zinc-800 max-h-24 overflow-y-auto" id="account-emoji-list">
-                        <!-- Заповниться динамічно -->
-                    </div>
+                    <div class="flex flex-wrap gap-1.5 p-2 bg-zinc-950 rounded-xl border border-zinc-800 max-h-24 overflow-y-auto" id="account-emoji-list"></div>
                 </div>
             </div>
 
@@ -212,7 +210,31 @@
         </div>
     </div>
 
-    <!-- ФІКСОВАНА КНОПКА ЗАКРИТТЯ ДНЯ З УРАХУВАННЯМ SAFE AREA ЗНИЗУ -->
+    <!-- МОДАЛЬНЕ ВІКНО ДОДАВАННЯ БОРГУ (АВТОНОМНЕ) -->
+    <div id="debt-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-zinc-900 border border-zinc-800 w-full max-w-sm rounded-2xl p-5 space-y-4">
+            <div class="flex justify-between items-center border-b border-zinc-800 pb-2">
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider">Новий запис про борг</h3>
+                <button onclick="closeDebtModal()" class="text-zinc-500 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="setModalDebtDirection('i_owe')" id="btn-modal-i-owe" class="py-2.5 rounded-xl text-xs font-bold bg-purple-900/40 text-white border border-purple-500 transition">Я винен</button>
+                    <button onclick="setModalDebtDirection('owe_me')" id="btn-modal-owe-me" class="py-2.5 rounded-xl text-xs font-semibold bg-zinc-800 text-zinc-400 border border-transparent transition">Мені винні</button>
+                </div>
+
+                <input type="text" id="debt-modal-person" placeholder="Ім'я особи або Назва зобов'язання" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-3 text-white text-sm focus:outline-none focus:border-purple-500">
+                <input type="number" id="debt-modal-amount" placeholder="Сума боргу, ₴" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-3 text-white text-sm focus:outline-none focus:border-purple-500">
+            </div>
+
+            <button onclick="saveNewDebt()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition">
+                Зберегти борг
+            </button>
+        </div>
+    </div>
+
+    <!-- ФІКСОВАНА КНОПКА ЗАКРИТТЯ ДНЯ -->
     <div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-900/60 pb-[calc(env(safe-area-inset-bottom,16px)+12px)] z-40">
         <button onclick="closeFinancialDay()" class="w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-yellow-400 hover:text-yellow-300 active:scale-95 transition font-bold py-3.5 rounded-xl text-xs tracking-wider flex justify-center items-center">
             <i class="fa-solid fa-moon mr-2"></i> ЗАКРИТИ ФІНАНСОВИЙ ДЕНЬ
@@ -241,25 +263,25 @@
         let currentTx = {
             type: 'expense',
             sourceAcc: null, 
-            targetAcc: null,
-            debtDirection: 'owe_me'
+            targetAcc: null
         };
 
         let tempNewAccType = 'card';
         let tempSelectedAccIcon = '💳';
         let tempSelectedPresetIcon = '☕';
+        let tempModalDebtDirection = 'i_owe';
         let presetEditMode = false;
-        let myChart = null;
+        let expenseChart = null;
 
         window.onload = function() {
             if (!state.accounts) {
                 state.accounts = [
-                    { id: 'card', label: 'Картка', balance: state.balances?.card || 0, type: 'card', icon: '💳' },
-                    { id: 'cash', label: 'Готівка', balance: state.balances?.cash || 0, type: 'cash', icon: '💵' },
-                    { id: 'piggy', label: 'Скарбничка', balance: state.balances?.piggy || 0, type: 'piggy', icon: '🐷' }
+                    { id: 'card', label: 'Картка', balance: 0, type: 'card', icon: '💳' },
+                    { id: 'cash', label: 'Готівка', balance: 0, type: 'cash', icon: '💵' },
+                    { id: 'piggy', label: 'Скарбничка', balance: 0, type: 'piggy', icon: '🐷' }
                 ];
-                delete state.balances;
             }
+            if (!state.debts) state.debts = [];
 
             currentTx.sourceAcc = state.accounts[0]?.id || null;
 
@@ -279,35 +301,96 @@
             renderDebts();
             renderHistory();
             renderFormAccountSelectors();
-            updateChart();
+            calculateAnalytics();
         }
 
-        function updateChart() {
-            const ctx = document.getElementById('balanceChart').getContext('2d');
-            const activeAccounts = state.accounts.filter(acc => acc.balance > 0);
-            const labels = activeAccounts.map(acc => `${acc.icon} ${acc.label}`);
-            const data = activeAccounts.map(acc => acc.balance);
-            
+        // РОЗУМНА АНАЛІТИКА: КАТЕГОРІЇ ТА СТАТИСТИКА
+        function calculateAnalytics() {
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            // 1. Рахуємо доходи та витрати з історії
+            state.history.forEach(tx => {
+                if (tx.type === 'income') {
+                    totalIncome += tx.amount;
+                } else if (tx.type === 'expense') {
+                    totalExpense += tx.amount;
+                }
+            });
+
+            // 2. Рахуємо борги
+            let totalIOwe = 0;
+            let totalOweMe = 0;
+            state.debts.forEach(d => {
+                if (d.direction === 'i_owe') {
+                    totalIOwe += d.amount;
+                } else {
+                    totalOweMe += d.amount;
+                }
+            });
+            const netDebts = totalOweMe - totalIOwe; // Позитивне значення - нам винні більше, негативне - ми винні
+
+            // Оновлюємо статистичні віджети
+            document.getElementById('stats-income').innerText = `${totalIncome.toFixed(0)} ₴`;
+            document.getElementById('stats-expense').innerText = `${totalExpense.toFixed(0)} ₴`;
+            document.getElementById('stats-debts').innerText = `${netDebts >= 0 ? '+' : ''}${netDebts.toFixed(0)} ₴`;
+
+            // 3. Групуємо витрати по категоріях для графіка
+            const categories = {};
+            state.history.forEach(tx => {
+                if (tx.type === 'expense') {
+                    // Отримуємо перше слово з коментаря як категорію
+                    let cat = 'Інше';
+                    if (tx.comment && tx.comment.trim()) {
+                        const cleanComment = tx.comment.replace(/[☕🍔🚗🛒✈️🎮🧸🛍️💵💳🐷]/g, '').trim();
+                        const firstWord = cleanComment.split(' ')[0];
+                        if (firstWord && firstWord.length > 2) {
+                            cat = firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase();
+                        }
+                    }
+                    categories[cat] = (categories[cat] || 0) + tx.amount;
+                }
+            });
+
+            const labels = Object.keys(categories);
+            const data = Object.values(categories);
+
+            // Якщо витрат немає, малюємо пустий графік
             if (data.length === 0) {
-                labels.push('Порожні рахунки');
+                labels.push('Немає витрат');
                 data.push(1);
             }
 
-            const chartColors = ['#10b981', '#06b6d4', '#8b5cf6', '#f59e0b', '#ec4899', '#3b82f6', '#f43f5e'];
+            const chartColors = ['#f43f5e', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#a1a1aa'];
 
-            if (myChart) {
-                myChart.data.labels = labels;
-                myChart.data.datasets[0].data = data;
-                myChart.data.datasets[0].backgroundColor = data.includes(1) && activeAccounts.length === 0 ? ['#27272a'] : chartColors.slice(0, data.length);
-                myChart.update();
+            // Рендеримо легенду списком нижче
+            const legendDiv = document.getElementById('chart-legend');
+            legendDiv.innerHTML = '';
+            if (labels[0] !== 'Немає витрат') {
+                labels.forEach((label, i) => {
+                    legendDiv.innerHTML += `
+                        <span class="flex items-center gap-1.5 bg-zinc-950 px-2 py-1 rounded-md border border-zinc-800/60">
+                            <span class="w-2.5 h-2.5 rounded-full block" style="background-color: ${chartColors[i % chartColors.length]}"></span>
+                            ${label}: <strong>${data[i].toFixed(0)} ₴</strong>
+                        </span>
+                    `;
+                });
+            }
+
+            const ctx = document.getElementById('expenseChart').getContext('2d');
+            if (expenseChart) {
+                expenseChart.data.labels = labels;
+                expenseChart.data.datasets[0].data = data;
+                expenseChart.data.datasets[0].backgroundColor = labels[0] === 'Немає витрат' ? ['#27272a'] : chartColors.slice(0, data.length);
+                expenseChart.update();
             } else {
-                myChart = new Chart(ctx, {
+                expenseChart = new Chart(ctx, {
                     type: 'doughnut',
                     data: {
                         labels: labels,
                         datasets: [{
                             data: data,
-                            backgroundColor: chartColors.slice(0, data.length),
+                            backgroundColor: labels[0] === 'Немає витрат' ? ['#27272a'] : chartColors.slice(0, data.length),
                             borderWidth: 0,
                             hoverOffset: 4
                         }]
@@ -320,13 +403,13 @@
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
-                                        if (context.label === 'Порожні рахунки') return ' 0 ₴';
+                                        if (context.label === 'Немає витрат') return ' 0 ₴';
                                         return ` ${context.raw.toFixed(2)} ₴`;
                                     }
                                 }
                             }
                         },
-                        cutout: '70%'
+                        cutout: '72%'
                     }
                 });
             }
@@ -399,7 +482,7 @@
                 const mainBtn = document.createElement('button');
                 mainBtn.className = `py-2 px-3.5 rounded-xl bg-zinc-800 border border-zinc-700 text-xs text-white font-medium hover:bg-zinc-700 active:scale-95 transition ${presetEditMode ? 'opacity-50 pointer-events-none' : ''}`;
                 mainBtn.innerHTML = `${p.label} <span class="text-zinc-400 ml-1">${p.amount}₴</span>`;
-                mainBtn.onclick = () => selectPresetToForm(p); // ОНОВЛЕНА ЛОГІКА: ЗАПОВНЕННЯ ФОРМИ ЗАМІСТЬ МИТТЄВОГО СПИСАННЯ
+                mainBtn.onclick = () => selectPresetToForm(p);
 
                 if (presetEditMode) {
                     const delBtn = document.createElement('button');
@@ -560,6 +643,65 @@
             saveState();
         }
 
+        // АВТОНОМНІ БОРГИ: МОДАЛЬНЕ ВІКНО ТА РЕНДЕР
+        function openDebtModal() {
+            document.getElementById('debt-modal').classList.remove('hidden');
+            setModalDebtDirection('i_owe');
+        }
+
+        function closeDebtModal() {
+            document.getElementById('debt-modal').classList.add('hidden');
+            document.getElementById('debt-modal-person').value = '';
+            document.getElementById('debt-modal-amount').value = '';
+        }
+
+        function setModalDebtDirection(direction) {
+            tempModalDebtDirection = direction;
+            const btnIOwe = document.getElementById('btn-modal-i-owe');
+            const btnOweMe = document.getElementById('btn-modal-owe-me');
+
+            if (direction === 'i_owe') {
+                btnIOwe.className = "py-2.5 rounded-xl text-xs font-bold bg-purple-900/40 text-white border border-purple-500 transition";
+                btnOweMe.className = "py-2.5 rounded-xl text-xs font-semibold bg-zinc-800 text-zinc-400 border border-transparent transition";
+            } else {
+                btnOweMe.className = "py-2.5 rounded-xl text-xs font-bold bg-purple-900/40 text-white border border-purple-500 transition";
+                btnIOwe.className = "py-2.5 rounded-xl text-xs font-semibold bg-zinc-800 text-zinc-400 border border-transparent transition";
+            }
+        }
+
+        function saveNewDebt() {
+            const personInput = document.getElementById('debt-modal-person');
+            const amountInput = document.getElementById('debt-modal-amount');
+            const person = personInput.value.trim();
+            const amount = parseFloat(amountInput.value);
+
+            if (!person || isNaN(amount) || amount <= 0) {
+                alert('Будь ласка, вкажіть ім\'я особи та правильну суму!');
+                return;
+            }
+
+            if (!state.debts) state.debts = [];
+            state.debts.push({
+                id: Date.now(),
+                person: person,
+                amount: amount,
+                direction: tempModalDebtDirection
+            });
+
+            // Додаємо запис в історію як чисто інформативний заголовок
+            const dateStr = new Date().toLocaleDateString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+            state.history.push({
+                type: 'debt_new',
+                amount: amount,
+                account: 'none', // Без прив'язки до реального рахунку
+                comment: tempModalDebtDirection === 'i_owe' ? `📝 Фіксація боргу: Я винен ${person}` : `📝 Фіксація боргу: Мені винен ${person}`,
+                date: dateStr
+            });
+
+            closeDebtModal();
+            saveState();
+        }
+
         function renderDebts() {
             const container = document.getElementById('debts-list');
             container.innerHTML = '';
@@ -575,7 +717,7 @@
                 
                 const isIOwe = debt.direction === 'i_owe';
                 const badgeColor = isIOwe ? 'bg-red-500/10 text-red-400' : 'bg-purple-500/10 text-purple-400';
-                const badgeText = isIOwe ? 'Я винен' : 'Mentі винні';
+                const badgeText = isIOwe ? 'Я винен' : 'Мені винні';
 
                 row.innerHTML = `
                     <div>
@@ -583,7 +725,7 @@
                         <span class="font-bold text-zinc-200">${debt.person}</span>
                     </div>
                     <div class="flex items-center space-x-3">
-                        <span class="font-bold text-white">${debt.amount.toFixed(2)} ₴</span>
+                        <span class="font-bold text-white">${debt.amount.toFixed(0)} ₴</span>
                         <button onclick="resolveDebt(${index})" class="text-emerald-500 hover:text-emerald-400 font-bold bg-emerald-500/10 px-2 py-1 rounded-lg text-[10px]">Закрити</button>
                     </div>
                 `;
@@ -591,72 +733,57 @@
             });
         }
 
+        function resolveDebt(index) {
+            const debt = state.debts[index];
+            const dateStr = new Date().toLocaleDateString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+
+            state.history.push({
+                type: 'debt_close',
+                amount: debt.amount,
+                account: 'none',
+                comment: debt.direction === 'i_owe' ? `✅ Закрито борг перед: ${debt.person}` : `✅ Повернуто борг від: ${debt.person}`,
+                date: dateStr
+            });
+
+            state.debts.splice(index, 1);
+            saveState();
+        }
+
         function setTxType(type) {
             currentTx.type = type;
-            ['income', 'expense', 'transfer', 'debt'].forEach(t => {
+            ['income', 'expense', 'transfer'].forEach(t => {
                 const btn = document.getElementById(`btn-type-${t}`);
                 if (t === type) {
-                    btn.className = "py-2 rounded-xl text-[10px] font-bold transition bg-emerald-600 text-white";
+                    btn.className = "py-2 rounded-xl text-xs font-bold transition bg-emerald-600 text-white";
                 } else {
-                    btn.className = "py-2 rounded-xl text-[10px] font-bold transition bg-zinc-800 text-zinc-400";
+                    btn.className = "py-2 rounded-xl text-xs font-bold transition bg-zinc-800 text-zinc-400";
                 }
             });
 
             const targetBlock = document.getElementById('target-acc-block');
-            const debtFields = document.getElementById('debt-fields');
-            const commentBlock = document.getElementById('comment-block');
             const sourceLabel = document.getElementById('source-label');
 
             if (type === 'transfer') {
                 targetBlock.classList.remove('hidden');
-                debtFields.classList.add('hidden');
-                commentBlock.classList.remove('hidden');
                 sourceLabel.innerText = "Звідки переказуємо:";
                 currentTx.targetAcc = state.accounts.find(a => a.id !== currentTx.sourceAcc)?.id || null;
-            } else if (type === 'debt') {
-                targetBlock.classList.add('hidden');
-                debtFields.classList.remove('hidden');
-                commentBlock.classList.add('hidden'); 
-                sourceLabel.innerText = "Який рахунок задіяти:";
-                setDebtDirection('owe_me');
             } else {
                 targetBlock.classList.add('hidden');
-                debtFields.classList.add('hidden');
-                commentBlock.classList.remove('hidden');
                 sourceLabel.innerText = "Рахунок:";
             }
             renderFormAccountSelectors();
         }
 
-        function setDebtDirection(dir) {
-            currentTx.debtDirection = dir;
-            ['i_owe', 'owe_me'].forEach(d => {
-                const btn = document.getElementById(`btn-debt-${d}`);
-                if (d === dir) {
-                    btn.className = "py-2 rounded-xl text-xs font-semibold bg-purple-900/20 text-white border border-purple-500 transition";
-                } else {
-                    btn.className = "py-2 rounded-xl text-xs font-semibold bg-zinc-800 text-zinc-400 border border-transparent transition";
-                }
-            });
-        }
-
-        // ОНОВЛЕНА ФУНКЦІЯ: ТЕПЕР ПРЕСЕТ ЗАПОВНЮЄ ФОРМУ, А НЕ СПИСУЄ НАОСЛІП
         function selectPresetToForm(preset) {
-            // Встановлюємо тип "Витрата"
             setTxType('expense');
-            
-            // Заповнюємо поля суми та коментаря згідно з пресетом
             document.getElementById('tx-amount').value = preset.amount;
             document.getElementById('tx-comment').value = preset.label;
-
-            // Плавно скролимо екран до форми операції, щоб користувач міг обрати рахунок
             document.getElementById('transaction-section').scrollIntoView({ behavior: 'smooth' });
         }
 
         function processTransaction() {
             const amountInput = document.getElementById('tx-amount');
             const commentInput = document.getElementById('tx-comment');
-            const personInput = document.getElementById('debt-person');
             const amount = parseFloat(amountInput.value);
 
             if (isNaN(amount) || amount <= 0) {
@@ -672,43 +799,7 @@
 
             const dateStr = new Date().toLocaleDateString('uk-UA', { hour: '2-digit', minute: '2-digit' });
 
-            if (currentTx.type === 'debt') {
-                const person = personInput.value.trim();
-                if (!person) {
-                    alert('Введіть ім\'я або назву боргу!');
-                    return;
-                }
-
-                if (!state.debts) state.debts = [];
-                state.debts.push({
-                    id: Date.now(),
-                    person: person,
-                    amount: amount,
-                    direction: currentTx.debtDirection,
-                    account: currentTx.sourceAcc
-                });
-
-                if (currentTx.debtDirection === 'i_owe') {
-                    targetAccObj.balance += amount;
-                } else {
-                    if (targetAccObj.balance < amount) {
-                        alert('Недостатньо коштів на рахунку!');
-                        return;
-                    }
-                    targetAccObj.balance -= amount;
-                }
-
-                state.history.push({
-                    type: 'debt_new',
-                    amount: amount,
-                    account: currentTx.sourceAcc,
-                    comment: currentTx.debtDirection === 'i_owe' ? `Взято борг у: ${person}` : `Дано борг для: ${person}`,
-                    date: dateStr
-                });
-
-                personInput.value = '';
-
-            } else if (currentTx.type === 'income') {
+            if (currentTx.type === 'income') {
                 if (targetAccObj.type === 'card') {
                     const piggyShare = Number((amount * 0.10).toFixed(2));
                     const cardShare = Number((amount - piggyShare).toFixed(2));
@@ -810,72 +901,6 @@
             saveState();
         }
 
-        function resolveDebt(index) {
-            const debt = state.debts[index];
-            const accOptions = state.accounts.map(a => `"${a.id}" для ${a.label}`).join('\n');
-            const accId = prompt(`Куди провести транзакцію щодо боргу "${debt.person}"?\nВведіть ID рахунку:\n${accOptions}`, debt.account) || debt.account;
-            
-            const selectedAcc = state.accounts.find(a => a.id === accId);
-            if (!selectedAcc) {
-                alert('Вказано неіснуючий рахунок!');
-                return;
-            }
-
-            const dateStr = new Date().toLocaleDateString('uk-UA', { hour: '2-digit', minute: '2-digit' });
-
-            if (debt.direction === 'i_owe') {
-                if (selectedAcc.type === 'card') {
-                    const roundedSum = Math.ceil(debt.amount / 10) * 10;
-                    const change = Number((roundedSum - debt.amount).toFixed(2));
-                    
-                    if (selectedAcc.balance < (debt.amount + change)) {
-                        alert('Недостатньо коштів на картці!');
-                        return;
-                    }
-                    selectedAcc.balance -= (debt.amount + change);
-                    const piggyObj = state.accounts.find(a => a.type === 'piggy') || state.accounts[2];
-                    if (piggyObj) piggyObj.balance += change;
-
-                    if (change > 0) {
-                        state.history.push({
-                            type: 'transfer',
-                            amount: change,
-                            account: selectedAcc.id,
-                            comment: `🐷 Округлення транзакції до 10 грн`,
-                            date: dateStr
-                        });
-                    }
-                } else {
-                    if (selectedAcc.balance < debt.amount) {
-                        alert('Недостатньо коштів!');
-                        return;
-                    }
-                    selectedAcc.balance -= debt.amount;
-                }
-            } else {
-                if (selectedAcc.type === 'card') {
-                    const piggyShare = Number((debt.amount * 0.10).toFixed(2));
-                    const cardShare = Number((debt.amount - piggyShare).toFixed(2));
-                    selectedAcc.balance += cardShare;
-                    const piggyObj = state.accounts.find(a => a.type === 'piggy') || state.accounts[2];
-                    if (piggyObj) piggyObj.balance += piggyShare;
-                } else {
-                    selectedAcc.balance += debt.amount;
-                }
-            }
-
-            state.history.push({
-                type: 'debt_close',
-                amount: debt.amount,
-                account: selectedAcc.id,
-                comment: debt.direction === 'i_owe' ? `Погашено борг перед: ${debt.person}` : `Повернуто борг від: ${debt.person}`,
-                date: dateStr
-            });
-
-            state.debts.splice(index, 1);
-            saveState();
-        }
-
         function renderHistory() {
             const container = document.getElementById('tx-history');
             container.innerHTML = '';
@@ -892,7 +917,7 @@
                 
                 let icon = '';
                 let colorClass = 'text-white';
-                let amountText = `${tx.amount.toFixed(2)} ₴`;
+                let amountText = `${tx.amount.toFixed(0)} ₴`;
 
                 if (tx.type === 'income') {
                     icon = '<i class="fa-solid fa-arrow-down text-emerald-500 mr-2"></i>';
@@ -914,7 +939,7 @@
                 }
 
                 const accObj = state.accounts.find(a => a.id === tx.account);
-                const accLabel = accObj ? `${accObj.icon} ${accObj.label}` : 'Рахунок';
+                const accLabel = accObj ? `${accObj.icon} ${accObj.label}` : 'Без рахунку';
 
                 row.innerHTML = `
                     <div class="flex items-center">
