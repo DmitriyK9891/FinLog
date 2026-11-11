@@ -168,7 +168,7 @@
         <div id="tx-history" class="space-y-3 max-h-60 overflow-y-auto pr-1"></div>
     </section>
 
-    <!-- МОДАЛЬНЕ ВІКНО ДОДАВАННЯ РАХУНКУ (З ВИБОРОМ ВАЛЮТИ) -->
+    <!-- МОДАЛЬНЕ ВІКНО ДОДАВАННЯ РАХУНКУ -->
     <div id="account-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
         <div class="bg-zinc-900 border border-zinc-800 w-full max-w-sm rounded-2xl p-5 space-y-4">
             <div class="flex justify-between items-center border-b border-zinc-800 pb-2">
@@ -209,7 +209,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНЕ ВІКНО РЕВІЗІЇ (КОРИГУВАННЯ БАЛАНСУ) -->
+    <!-- МОДАЛЬНЕ ВІКНО РЕВІЗІЇ -->
     <div id="audit-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
         <div class="bg-zinc-900 border border-zinc-800 w-full max-w-sm rounded-2xl p-5 space-y-4">
             <div class="flex justify-between items-center border-b border-zinc-800 pb-2">
@@ -293,7 +293,6 @@
         let auditAccId = null;
 
         window.onload = function() {
-            // Міграція для старих рахунків без валюти
             state.accounts.forEach(acc => {
                 if (!acc.currency) acc.currency = '₴';
             });
@@ -451,7 +450,6 @@
             presetList.children[10]?.classList.replace('border-zinc-800', 'border-yellow-500');
         }
 
-        // РЕНДЕР РАХУНКІВ ТА ЗУПИНКА ПО ВАЛЮТАХ
         function renderAccounts() {
             const list = document.getElementById('accounts-list');
             list.innerHTML = '';
@@ -479,7 +477,6 @@
                 list.appendChild(card);
             });
 
-            // Виводимо суми по кожній валюті в загальному блоці балансу
             const totalsContainer = document.getElementById('total-balances-container');
             totalsContainer.innerHTML = '';
             for (const [cur, sum] of Object.entries(currencyTotals)) {
@@ -491,7 +488,6 @@
             }
         }
 
-        // РЕВІЗІЯ БАЛАНСУ (КОРИГУВАННЯ ФАКТИЧНОЇ СУМИ)
         function openAuditModal(accId) {
             auditAccId = accId;
             const acc = state.accounts.find(a => a.id === accId);
@@ -867,7 +863,6 @@
             const tx = state.history[index];
             if (!tx) return;
 
-            // Відкочуємо баланс
             if (tx.type === 'expense') {
                 const acc = state.accounts.find(a => a.id === tx.account);
                 if (acc) acc.balance += tx.amount;
@@ -954,7 +949,7 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="font-black text-sm text-white">${d.amount.toFixed(2)} ₴</span>
-                        <button onclick="deleteDebt('${d.id}')" class="text-zinc-600 hover:text-red-400"><i class="fa-solid fa-trash"></i></button>
+                        <button onclick="deleteDebt('${d.id}')" class="text-zinc-500 hover:text-red-400 p-1"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 `;
                 list.appendChild(item);
