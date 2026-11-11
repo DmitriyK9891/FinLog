@@ -114,7 +114,7 @@
         <div id="presets-list" class="flex flex-wrap gap-2"></div>
     </section>
 
-    <!-- БОРГОВИЙ РАДАР (З ВИПРАВЛЕНИМ ВИДАЛЕННЯМ) -->
+    <!-- БОРГОВИЙ РАДАР -->
     <section class="bg-zinc-900 p-4 rounded-2xl border border-zinc-800/80 mb-4">
         <div class="flex justify-between items-center mb-3">
             <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider"><i class="fa-solid fa-handshake mr-1 text-purple-400"></i> Борги та зобов'язання</h3>
@@ -295,6 +295,11 @@
                 if (!acc.currency) acc.currency = '₴';
             });
             if (!state.debts) state.debts = [];
+
+            // Автоматично додаємо ID старим боргам, якщо їх немає
+            state.debts.forEach((d, idx) => {
+                if (!d.id) d.id = 'debt_legacy_' + idx;
+            });
 
             currentTx.sourceAcc = state.accounts[0]?.id || null;
 
@@ -878,7 +883,7 @@
             saveState();
         }
 
-        // БОРГИ (З ВИПРАВЛЕНИМ КЛІКОМ І ПІДТВЕРДЖЕННЯМ)
+        // БОРГИ (ПОКРАЩЕНА ЛОГІКА ВИДАЛЕННЯ)
         function openDebtModal() {
             document.getElementById('debt-modal').classList.remove('hidden');
         }
@@ -933,12 +938,15 @@
                 return;
             }
 
-            state.debts.forEach(d => {
+            state.debts.forEach((d, index) => {
                 const item = document.createElement('div');
                 const isIOwe = d.direction === 'i_owe';
                 item.className = `p-3 rounded-xl border flex justify-between items-center text-xs ${
                     isIOwe ? 'bg-purple-950/20 border-purple-900/40' : 'bg-zinc-950/40 border-zinc-800'
                 }`;
+
+                // Використовуємо індекс або id для надійного видалення
+                const identifier = d.id || index;
 
                 item.innerHTML = `
                     <div>
@@ -947,7 +955,7 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="font-black text-sm text-white">${d.amount.toFixed(2)} ₴</span>
-                        <button type="button" onclick="deleteDebt('${d.id}')" class="text-zinc-500 hover:text-red-400 p-2 transition flex items-center justify-center" title="Видалити борг">
+                        <button type="button" onclick="deleteDebt('${identifier}')" class="text-zinc-400 hover:text-red-400 p-2 transition cursor-pointer" title="Видалити борг">
                             <i class="fa-solid fa-trash pointer-events-none"></i>
                         </button>
                     </div>
@@ -958,7 +966,7 @@
 
         function deleteDebt(id) {
             if (confirm('Видалити цей борговий запис?')) {
-                state.debts = state.debts.filter(d => String(d.id) !== String(id));
+                state.debts = state.debts.filter((d, index) => String(d.id) !== String(id) && String(index) !== String(id));
                 saveState();
             }
         }
