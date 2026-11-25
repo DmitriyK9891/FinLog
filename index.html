@@ -175,10 +175,10 @@
             </div>
             
             <div class="space-y-3">
-                <input type="text" id="new-acc-name" placeholder="Назва (напр. Сейф, Монобанк)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-3 text-white text-sm focus:outline-none focus:border-emerald-500">
+                <input type="text" id="new-acc-name" placeholder="Назва (напр. Конверт, Монобанк)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-3 text-white text-sm focus:outline-none focus:border-emerald-500">
                 
                 <div class="grid grid-cols-2 gap-2">
-                    <input type="number" id="new-acc-balance" placeholder="Початковий баланс" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-3 text-white text-sm focus:outline-none">
+                    <input type="number" id="new-acc-balance" step="0.01" placeholder="Початковий баланс" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-3 text-white text-sm focus:outline-none">
                     <select id="new-acc-currency" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-3 text-white text-sm focus:outline-none">
                         <option value="₴">₴ (Гривня)</option>
                         <option value="$">$ (Долар)</option>
@@ -189,9 +189,35 @@
                 <div>
                     <label class="text-[11px] text-zinc-500 block mb-1">Тип рахунку:</label>
                     <div class="grid grid-cols-3 gap-2">
-                        <button onclick="setNewAccType('card')" id="btn-new-card" class="py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white">Картка</button>
-                        <button onclick="setNewAccType('cash')" id="btn-new-cash" class="py-1.5 rounded-lg text-xs font-bold bg-zinc-800 text-zinc-400">Готівка</button>
-                        <button onclick="setNewAccType('piggy')" id="btn-new-piggy" class="py-1.5 rounded-lg text-xs font-bold bg-zinc-800 text-zinc-400">Скарбничка</button>
+                        <button type="button" onclick="setNewAccType('card')" id="btn-new-card" class="py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white">Картка</button>
+                        <button type="button" onclick="setNewAccType('cash')" id="btn-new-cash" class="py-1.5 rounded-lg text-xs font-bold bg-zinc-800 text-zinc-400">Готівка</button>
+                        <button type="button" onclick="setNewAccType('piggy')" id="btn-new-piggy" class="py-1.5 rounded-lg text-xs font-bold bg-zinc-800 text-zinc-400">Накопичення</button>
+                    </div>
+                </div>
+
+                <!-- ОСОБЛИВІ УМОВИ ЛИШЕ ДЛЯ КАРТОК -->
+                <div id="card-special-rules" class="bg-zinc-950/70 p-3 rounded-xl border border-zinc-800/80 space-y-2.5">
+                    <label class="flex items-center justify-between cursor-pointer text-xs text-zinc-200">
+                        <span><i class="fa-solid fa-coins text-amber-400 mr-1.5"></i> Автоокруглення витрат</span>
+                        <input type="checkbox" id="new-acc-round-enabled" onchange="toggleRoundTargetSelect()" class="accent-emerald-500 w-4 h-4 rounded">
+                    </label>
+
+                    <div id="round-options-box" class="hidden space-y-2 pt-1 border-t border-zinc-800/60">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <span class="text-[10px] text-zinc-500 block mb-0.5">Крок округлення:</span>
+                                <select id="new-acc-round-step" class="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-1.5 px-2 text-xs text-white focus:outline-none">
+                                    <option value="1">До 1</option>
+                                    <option value="10" selected>До 10</option>
+                                    <option value="50">До 50</option>
+                                    <option value="100">До 100</option>
+                                </select>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-zinc-500 block mb-0.5">Куди відкладати:</span>
+                                <select id="new-acc-round-target" class="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-1.5 px-2 text-xs text-white focus:outline-none"></select>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -258,11 +284,11 @@
     </div>
 
     <script>
-        const availableIcons = ['💳', '💵', '🏦', '🔑', '💼', '🐷', '📦', '🏠', '📈', '🛍️', '☕', '🍔', '🚗', '🛒', '✈️', '🎮', '🧸', '🔋'];
+        const availableIcons = ['💳', '💵', '🏦', '🔑', '💼', '🐷', '📦', '🏠', '📈', '🛍️', '☕', '🍔', '🚗', '🛒', '✈️', '🎮', '🧸', '🔋', '✉️'];
 
         let state = JSON.parse(localStorage.getItem('finlog_state')) || {
             accounts: [
-                { id: 'card', label: 'Картка', balance: 0, currency: '₴', type: 'card', icon: '💳' },
+                { id: 'card', label: 'Картка', balance: 0, currency: '₴', type: 'card', icon: '💳', roundEnabled: true, roundStep: 10, roundTargetId: 'piggy' },
                 { id: 'cash', label: 'Готівка', balance: 0, currency: '₴', type: 'cash', icon: '💵' },
                 { id: 'piggy', label: 'Скарбничка', balance: 0, currency: '₴', type: 'piggy', icon: '🐷' }
             ],
@@ -295,8 +321,6 @@
                 if (!acc.currency) acc.currency = '₴';
             });
             if (!state.debts) state.debts = [];
-
-            // Автоматично додаємо ID старим боргам, якщо їх немає
             state.debts.forEach((d, idx) => {
                 if (!d.id) d.id = 'debt_legacy_' + idx;
             });
@@ -348,7 +372,7 @@
                 if (tx.type === 'expense') {
                     let cat = 'Інше';
                     if (tx.comment && tx.comment.trim()) {
-                        const cleanComment = tx.comment.replace(/[☕🍔🚗🛒✈️🎮🧸🛍️💵💳🐷]/g, '').trim();
+                        const cleanComment = tx.comment.replace(/[☕🍔🚗🛒✈️🎮🧸🛍️💵💳🐷✉️]/g, '').trim();
                         const firstWord = cleanComment.split(' ')[0];
                         if (firstWord && firstWord.length > 2) {
                             cat = firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase();
@@ -463,12 +487,17 @@
                 const cur = acc.currency || '₴';
                 currencyTotals[cur] = (currencyTotals[cur] || 0) + acc.balance;
 
+                const roundBadge = (acc.type === 'card' && acc.roundEnabled)
+                    ? `<span class="text-[9px] text-amber-400/90 block mt-0.5">↻ округлення до ${acc.roundStep || 10}</span>`
+                    : '';
+
                 const card = document.createElement('div');
                 card.className = "bg-zinc-950/60 p-3 rounded-2xl border border-zinc-800/80 text-center relative flex flex-col justify-between";
                 card.innerHTML = `
                     <div>
                         <span class="text-[11px] text-zinc-400 block mb-1">${acc.icon} ${acc.label}</span>
                         <span class="text-base font-bold text-white">${acc.balance.toFixed(2)}</span> <span class="text-xs text-zinc-400">${cur}</span>
+                        ${roundBadge}
                     </div>
                     <div class="flex justify-center items-center gap-2 mt-2 pt-2 border-t border-zinc-900">
                         <button onclick="openAuditModal('${acc.id}')" class="text-zinc-500 hover:text-emerald-400 text-[11px]" title="Коригувати баланс"><i class="fa-solid fa-pen-to-square"></i> Ревізія</button>
@@ -596,7 +625,34 @@
             });
         }
 
+        function populateRoundTargets() {
+            const select = document.getElementById('new-acc-round-target');
+            select.innerHTML = '';
+            const targets = state.accounts.filter(a => a.type === 'piggy' || a.id === 'piggy');
+            const pool = targets.length > 0 ? targets : state.accounts;
+            pool.forEach(acc => {
+                const opt = document.createElement('option');
+                opt.value = acc.id;
+                opt.innerText = `${acc.icon} ${acc.label}`;
+                select.appendChild(opt);
+            });
+        }
+
+        function toggleRoundTargetSelect() {
+            const enabled = document.getElementById('new-acc-round-enabled').checked;
+            const box = document.getElementById('round-options-box');
+            if (enabled) {
+                populateRoundTargets();
+                box.classList.remove('hidden');
+            } else {
+                box.classList.add('hidden');
+            }
+        }
+
         function openAccountModal() {
+            setNewAccType('card');
+            document.getElementById('new-acc-round-enabled').checked = false;
+            document.getElementById('round-options-box').classList.add('hidden');
             document.getElementById('account-modal').classList.remove('hidden');
         }
 
@@ -614,6 +670,16 @@
                     btn.className = "py-1.5 rounded-lg text-xs font-bold bg-zinc-800 text-zinc-400";
                 }
             });
+
+            // Особливі умови доступні лише для карток
+            const cardRules = document.getElementById('card-special-rules');
+            if (type === 'card') {
+                cardRules.classList.remove('hidden');
+            } else {
+                cardRules.classList.add('hidden');
+                document.getElementById('new-acc-round-enabled').checked = false;
+                document.getElementById('round-options-box').classList.add('hidden');
+            }
         }
 
         function createNewAccount() {
@@ -630,6 +696,10 @@
                 return;
             }
 
+            const roundEnabled = tempNewAccType === 'card' && document.getElementById('new-acc-round-enabled').checked;
+            const roundStep = roundEnabled ? (parseFloat(document.getElementById('new-acc-round-step').value) || 10) : 0;
+            const roundTargetId = roundEnabled ? (document.getElementById('new-acc-round-target').value || null) : null;
+
             const id = 'acc_' + Date.now();
             state.accounts.push({
                 id: id,
@@ -637,7 +707,10 @@
                 balance: balance,
                 currency: currency,
                 type: tempNewAccType,
-                icon: tempSelectedAccIcon
+                icon: tempSelectedAccIcon,
+                roundEnabled: roundEnabled,
+                roundStep: roundStep,
+                roundTargetId: roundTargetId
             });
 
             if (balance > 0) {
@@ -743,6 +816,31 @@
             }
         }
 
+        function applyExpenseRounding(srcAcc, amount, dateStr) {
+            if (srcAcc.type !== 'card' || !srcAcc.roundEnabled) return;
+            const step = srcAcc.roundStep || 10;
+            const remainder = amount % step;
+            if (remainder <= 0) return;
+
+            const roundUp = +(step - remainder).toFixed(2);
+            if (roundUp <= 0 || srcAcc.balance < roundUp) return;
+
+            const targetAcc = state.accounts.find(a => a.id === srcAcc.roundTargetId) || state.accounts.find(a => a.type === 'piggy');
+            if (!targetAcc || targetAcc.id === srcAcc.id) return;
+
+            srcAcc.balance = +(srcAcc.balance - roundUp).toFixed(2);
+            targetAcc.balance = +(targetAcc.balance + roundUp).toFixed(2);
+
+            state.history.unshift({
+                type: 'transfer',
+                amount: roundUp,
+                source: srcAcc.label,
+                target: targetAcc.label,
+                comment: `↻ Округлення з ${srcAcc.label} у ${targetAcc.label}`,
+                date: dateStr
+            });
+        }
+
         function processTransaction() {
             const amountInput = document.getElementById('tx-amount');
             const commentInput = document.getElementById('tx-comment');
@@ -768,7 +866,7 @@
                     alert('Недостатньо коштів на рахунку!');
                     return;
                 }
-                srcAcc.balance -= amount;
+                srcAcc.balance = +(srcAcc.balance - amount).toFixed(2);
                 state.history.unshift({
                     type: 'expense',
                     amount: amount,
@@ -776,8 +874,9 @@
                     comment: commentInput.value.trim() || 'Витрата',
                     date: dateStr
                 });
+                applyExpenseRounding(srcAcc, amount, dateStr);
             } else if (currentTx.type === 'income') {
-                srcAcc.balance += amount;
+                srcAcc.balance = +(srcAcc.balance + amount).toFixed(2);
                 state.history.unshift({
                     type: 'income',
                     amount: amount,
@@ -802,8 +901,8 @@
                     return;
                 }
 
-                srcAcc.balance -= amount;
-                tgtAcc.balance += amount;
+                srcAcc.balance = +(srcAcc.balance - amount).toFixed(2);
+                tgtAcc.balance = +(tgtAcc.balance + amount).toFixed(2);
 
                 state.history.unshift({
                     type: 'transfer',
@@ -868,22 +967,22 @@
 
             if (tx.type === 'expense') {
                 const acc = state.accounts.find(a => a.id === tx.account);
-                if (acc) acc.balance += tx.amount;
+                if (acc) acc.balance = +(acc.balance + tx.amount).toFixed(2);
             } else if (tx.type === 'income') {
                 const acc = state.accounts.find(a => a.id === tx.account);
-                if (acc) acc.balance -= tx.amount;
+                if (acc) acc.balance = +(acc.balance - tx.amount).toFixed(2);
             } else if (tx.type === 'transfer') {
                 const src = state.accounts.find(a => a.label === tx.source);
                 const tgt = state.accounts.find(a => a.label === tx.target);
-                if (src) src.balance += tx.amount;
-                if (tgt) tgt.balance -= tx.amount;
+                if (src) src.balance = +(src.balance + tx.amount).toFixed(2);
+                if (tgt) tgt.balance = +(tgt.balance - tx.amount).toFixed(2);
             }
 
             state.history.splice(index, 1);
             saveState();
         }
 
-        // БОРГИ (ПОКРАЩЕНА ЛОГІКА ВИДАЛЕННЯ)
+        // БОРГИ
         function openDebtModal() {
             document.getElementById('debt-modal').classList.remove('hidden');
         }
@@ -945,7 +1044,6 @@
                     isIOwe ? 'bg-purple-950/20 border-purple-900/40' : 'bg-zinc-950/40 border-zinc-800'
                 }`;
 
-                // Використовуємо індекс або id для надійного видалення
                 const identifier = d.id || index;
 
                 item.innerHTML = `
@@ -971,8 +1069,40 @@
             }
         }
 
+        // ЗАКРИТТЯ ДНЯ З ОКРУГЛЕННЯМ ЗАЛИШКІВ НА КАРТКАХ ІЗ АКТИВНИМ ПРАВИЛОМ
         function closeFinancialDay() {
-            alert('Фінансовий день успішно зафіксовано!');
+            const dateStr = new Date().toLocaleDateString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+            let roundedCount = 0;
+
+            state.accounts.forEach(acc => {
+                if (acc.type === 'card' && acc.roundEnabled) {
+                    const step = acc.roundStep || 10;
+                    const remainder = acc.balance % step;
+                    if (remainder > 0 && acc.balance >= remainder) {
+                        const targetAcc = state.accounts.find(a => a.id === acc.roundTargetId) || state.accounts.find(a => a.type === 'piggy');
+                        if (targetAcc && targetAcc.id !== acc.id) {
+                            const shift = +remainder.toFixed(2);
+                            acc.balance = +(acc.balance - shift).toFixed(2);
+                            targetAcc.balance = +(targetAcc.balance + shift).toFixed(2);
+                            state.history.unshift({
+                                type: 'transfer',
+                                amount: shift,
+                                source: acc.label,
+                                target: targetAcc.label,
+                                comment: `🌙 Закриття дня: округлення ${acc.label} → ${targetAcc.label}`,
+                                date: dateStr
+                            });
+                            roundedCount++;
+                        }
+                    }
+                }
+            });
+
+            saveState();
+            alert(roundedCount > 0
+                ? `Фінансовий день закрито! Округлено та перенесено залишки по рахунках: ${roundedCount}.`
+                : 'Фінансовий день успішно зафіксовано!'
+            );
         }
 
         function exportBackup() {
